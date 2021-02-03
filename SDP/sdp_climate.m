@@ -46,6 +46,10 @@ runParam.runSDP = true;
 % Number of years to generate in T, P, streamflow time series
 runParam.steplen = 20; 
 
+% Set Emissions Scenario
+emisScenario = {'RCP19' 'RCP26' 'RCP34' 'RCP45' 'RCP6' 'RCP7' 'RCP85'}
+runParam.setPathway = emisScenario{7}
+
 % If true, simulate runoff time series from T, P time series using CLIRUN. If false, load saved.
 runParam.runRunoff = false; 
 
@@ -210,7 +214,8 @@ end
 if runParam.calcTmat
     load('BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat')
     [T_Temp, T_Precip, ~, ~, ~, ~] = bma2TransMat( NUT, NUP, s_T, s_P, N, climParam);
-    save('T_Temp_Precip', 'T_Temp', 'T_Precip')    
+    T_name = strcat('T_Temp_Precip_', runParam.setPathway) % save a different transition matrix file for different emissions pathways
+    save(T_name, 'T_Temp', 'T_Precip')    
 else
     load('T_Temp_Precip') 
 end
