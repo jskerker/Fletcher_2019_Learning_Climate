@@ -88,13 +88,13 @@ runParam.desalOn = false;
 runParam.desalCapacity = [60 80];
 
 % If using pre-saved runoff time series, name of .mat file to load
-runParam.runoffLoadName = 'runoff_by_state_Mar16_knnboot_1t';
+runParam.runoffLoadName = '/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/SDP/runoff_by_state_Mar16_knnboot_1t';
 
 % If using pre-saved shortage costs, name of .mat file to load
 %runParam.shortageLoadName = 'shortage_costs_28_Feb_2018_17_04_42';
 
 % If using pre-saved shortage costs, name of .mat file to load
-runParam.shortageLoadName = 'ddp_results';
+runParam.shortageLoadName = 'ddp_results_domCost1_80_120';
 
 % If true, save results
 runParam.saveOn = true;
@@ -212,12 +212,12 @@ end
 % Bayesian statistical model
 
 if runParam.calcTmat
-    load('BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat')
+    load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_2020-11-14.mat')
     [T_Temp, T_Precip, ~, ~, ~, ~] = bma2TransMat( NUT, NUP, s_T, s_P, N, climParam);
     T_name = strcat('T_Temp_Precip_', runParam.setPathway) % save a different transition matrix file for different emissions pathways
     save(T_name, 'T_Temp', 'T_Precip')    
 else
-    load('T_Temp_Precip') 
+    load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/T_Temp_Precip_RCP85B') 
 end
 
 % Prune state space -- no need to calculate policies for T and P states
@@ -631,7 +631,7 @@ shortageCostTime = zeros(R,N,4);
 opexCostTime = zeros(R,N,4);
 totalCostTime = zeros(R,N,4); 
 
-load('BMA_results_RCP85_2020-11-14.mat', 'MUT', 'MUP') % previously: 'BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat'
+load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_RCP85_2020-11-14.mat', 'MUT', 'MUP') % previously: 'BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat'
 indT0 = find(s_T_abs == climParam.T0_abs);
 indP0 = find(s_P_abs == climParam.P0_abs);
 T0samp = MUT(:,1,indT0);
