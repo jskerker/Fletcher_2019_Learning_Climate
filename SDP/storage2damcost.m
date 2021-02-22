@@ -1,4 +1,4 @@
-function [dcost, ecost] = storage2damcost(storage, flex_storage)
+function [dcost, ecost] = storage2damcost(storage, flex_storage, percFlex)
 
 % Load costs as a function of dam height and reservoir storage. These
 % values were taken from a dam cost tool developed the Mwache dam for: 
@@ -17,6 +17,11 @@ end
 % Upfront dam cost
 index = find(costmodel.storage == storage);
 dcost = costmodel.dam_cost(index);
+
+% add capital cost if using flex dam
+if flex_storage > 0
+    dcost = dcost * (1 + percFlex);
+end
 
 % Expansion costs if increase height
 ecost = [];
