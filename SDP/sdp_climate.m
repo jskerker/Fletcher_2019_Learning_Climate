@@ -192,7 +192,7 @@ if ~runParam.desalOn
     % dam costs
     infra_cost(2) = storage2damcost(storage(1),0);
     infra_cost(3) = storage2damcost(storage(2),0);
-    [infra_cost(4), infra_cost(5)] = storage2damcost(storage(1), storage(2), costParam.percFlex);
+    [infra_cost(4), infra_cost(5)] = storage2damcost(storage(1), storage(2), costParam.PercFlex);
     percsmalltolarge = (infra_cost(3) - infra_cost(2))/infra_cost(2);
     flexexp = infra_cost(4) + infra_cost(5);
     diffsmalltolarge = infra_cost(3) - infra_cost(2); %large capacity cost - small capacity cost
