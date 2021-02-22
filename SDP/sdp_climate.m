@@ -68,10 +68,7 @@ runParam.calcTmat = false;
 % If true, perform DDP to optimize reservoir operatations in the water
 % system model. If false, use non-optimized fixed rule curve for reservoir
 % operations
-runParam.optReservoir = true;
-
-% The number of discrete reservoir storage states in the DDP optimization.
-runParam.discrStorage = 75;
+runParam.optReservoir = false;
 
 % If true, calculate water shortage costs from runoff times series using water system model. If false, load saved.
 runParam.calcShortage = false; 
@@ -93,8 +90,12 @@ runParam.runoffLoadName = '/Users/jenniferskerker/Documents/GradSchool/Research/
 % If using pre-saved shortage costs, name of .mat file to load
 %runParam.shortageLoadName = 'shortage_costs_28_Feb_2018_17_04_42';
 
-% If using pre-saved shortage costs, name of .mat file to load
-runParam.shortageLoadName = 'ddp_results_domCost1_80_120';
+% If using pre-saved shortage costs of the optimized reservoir, name of .mat file to load
+if runParam.optReservoir == true
+    runParam.shortageLoadName = 'ddp_results_domCost1_80_120'; 
+else
+     runParam.shortageLoadName = 'shortage_costs_nonopt_domCost1_80_120'; %to get to the same magnitude of Sarah's, divide shortageCost/100 (E9)
+end
 
 % If true, save results
 runParam.saveOn = true;
@@ -120,7 +121,11 @@ costParam = struct;
 %costParam.yieldprctl = 50;
 
 % Value of shortage penalty for domestic use [$/m3]
-costParam.domShortage = 5; % Fletcher et al. (2019) utilized 5
+costParam.domShortage = 1; % Fletcher et al. (2019) utilized 5
+
+% To test different values of domShortage post-running on the cluster, use
+% this parameter to scale domShortage values/shortage cost results:
+costParam.scaleDomShortage = 1/1000;
 
 % Value of shortage penalty for ag use [$/m3]
 costParam.agShortage = 0;
@@ -128,6 +133,8 @@ costParam.agShortage = 0;
 % Discount rate
 costParam.discountrate = .03;
 
+% Capital Cost Increase Rate for Flex Dam
+costParam.PercFlex = .07;
 %% SDP State and Action Definitions 
 
 N = runParam.N;
@@ -185,11 +192,14 @@ if ~runParam.desalOn
     % dam costs
     infra_cost(2) = storage2damcost(storage(1),0);
     infra_cost(3) = storage2damcost(storage(2),0);
-    [infra_cost(4), infra_cost(5)] = storage2damcost(storage(1), storage(2));
+    [infra_cost(4), infra_cost(5)] = storage2damcost(storage(1), storage(2), costParam.percFlex);
     percsmalltolarge = (infra_cost(3) - infra_cost(2))/infra_cost(2);
     flexexp = infra_cost(4) + infra_cost(5);
-    diffsmalltolarge = infra_cost(3) - infra_cost(2);
-    shortagediff = (infra_cost(3) - infra_cost(2))/ (costParam.domShortage * 1e6);
+    diffsmalltolarge = infra_cost(3) - infra_cost(2); %large capacity cost - small capacity cost
+    shortagediff_linear = (infra_cost(3) - infra_cost(2))/ (costParam.domShortage * 1e6); % This is what was originally in the SDP
+    % Below is the shortage difference utilizing the quadratic costing
+    % method
+    shortagediff = sqrt((infra_cost(3)-infra_cost(2))/(costParam.domShortage *costParam.scaleDomShortage * 1e6)); % Updated for quadratic costing formulation?
     
 else
     % Planning scenario C: dam exists, make decision about new desalination plant
@@ -212,12 +222,13 @@ end
 % Bayesian statistical model
 
 if runParam.calcTmat
-    load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_2020-11-14.mat')
+    %load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_2020-11-11.mat')
     [T_Temp, T_Precip, ~, ~, ~, ~] = bma2TransMat( NUT, NUP, s_T, s_P, N, climParam);
     T_name = strcat('T_Temp_Precip_', runParam.setPathway) % save a different transition matrix file for different emissions pathways
     save(T_name, 'T_Temp', 'T_Precip')    
 else
-    load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/T_Temp_Precip_RCP85B') 
+    load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/SDP/T_Temp_Precip_RCP85A') 
+    %load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Mombasa_climate/SDP/T_Temp_Precip_RCP45A')
 end
 
 % Prune state space -- no need to calculate policies for T and P states
@@ -432,6 +443,8 @@ end
 
 if runParam.runSDP
 
+shortageCost = shortageCost.*costParam.scaleDomShortage;
+
 % Initialize best value and best action matrices
 % Temperature states x precipitaiton states x capacity states, time
 V = NaN(M_T_abs, M_P_abs, M_C, N+1);
@@ -631,7 +644,8 @@ shortageCostTime = zeros(R,N,4);
 opexCostTime = zeros(R,N,4);
 totalCostTime = zeros(R,N,4); 
 
-load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_RCP85_2020-11-14.mat', 'MUT', 'MUP') % previously: 'BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat'
+load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Fletcher_2019_Learning_Climate/BMA_code/BMA_results_RCP85_2020-11-11.mat', 'MUT', 'MUP') % previously: 'BMA_results_deltap05T_p2P07-Feb-2018 20:18:49.mat'
+%load('/Users/jenniferskerker/Documents/GradSchool/Research/Project1/Code/Models/Mombasa_climate/BMA_code/BMA_results_RCP45_2020-11-11.mat', 'MUT', 'MUP')
 indT0 = find(s_T_abs == climParam.T0_abs);
 indP0 = find(s_P_abs == climParam.P0_abs);
 T0samp = MUT(:,1,indT0);
