@@ -2,7 +2,7 @@ function [dcost, ecost] = storage2damcost(storage, flex_storage, percFlex)
 
 % if percFlex is not input, default to 0
 if ~exist('percFlex', 'var')
-    percFlex = 0
+    percFlex = 0;
 end
 
 % Load costs as a function of dam height and reservoir storage. These
